@@ -1,0 +1,18 @@
+# Blueprint do Render (https://render.com/docs/blueprint-spec)
+# Suba este repositorio no Render como "Blueprint" e configure o DATABASE_URL
+# (string de conexao do Neon) nas variaveis de ambiente do servico.
+services:
+  - type: web
+    name: portifolio-eixo-webgis
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ORTHO_TILE_URL
+        sync: false
+      - key: NODE_VERSION
+        value: "22"

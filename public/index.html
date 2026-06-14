@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eixo WebGIS — Gestão Territorial Municipal</title>
+  <meta name="description" content="WebGIS municipal: lotes, quadras, ruas e edificações com dashboard de gestão, mapa de calor e ortofoto." />
+
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◧</span>
+      <div class="brand-text">
+        <strong>Eixo WebGIS</strong>
+        <small>Gestão Territorial Municipal</small>
+      </div>
+    </div>
+    <div class="top-actions">
+      <label class="field">
+        <span>Bairro</span>
+        <select id="filtro-bairro"><option value="">Todos</option></select>
+      </label>
+      <button id="btn-dashboard" class="btn btn-primary" aria-pressed="true">
+        <span class="ico">▦</span> Dashboard
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Painel de camadas / basemap / heatmap -->
+    <aside class="panel controls" id="controls">
+      <div class="panel-head">
+        <span>Camadas</span>
+        <button class="panel-toggle" data-target="controls-body" title="Recolher">–</button>
+      </div>
+      <div class="panel-body" id="controls-body">
+        <fieldset>
+          <legend>Camada base</legend>
+          <div id="basemaps" class="radio-list"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Dados vetoriais</legend>
+          <div id="overlays" class="check-list"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Mapa de calor</legend>
+          <label class="switch-row">
+            <input type="checkbox" id="heat-toggle" />
+            <span>Ativar</span>
+          </label>
+          <select id="heat-metric" class="select-full">
+            <option value="populacao">População por bairro</option>
+            <option value="nao_pavimentadas">Ruas não pavimentadas</option>
+            <option value="edificacoes">Densidade de edificações</option>
+            <option value="lotes">Densidade de lotes</option>
+          </select>
+        </fieldset>
+      </div>
+    </aside>
+
+    <div id="map"></div>
+
+    <!-- Legenda -->
+    <div class="legend" id="legend" hidden></div>
+
+    <!-- Dashboard -->
+    <section class="panel dashboard" id="dashboard">
+      <div class="panel-head">
+        <span>Painel do Gestor</span>
+        <button class="panel-toggle" id="dashboard-close" title="Fechar">✕</button>
+      </div>
+      <div class="panel-body" id="dashboard-body">
+        <div class="kpi-grid" id="kpis"></div>
+
+        <div class="card">
+          <h3>Pavimentação das vias</h3>
+          <div class="pav-bar" id="pav-bar"></div>
+          <canvas id="chart-pav-status" height="150"></canvas>
+        </div>
+
+        <div class="card alert" id="card-sem-pav">
+          <h3>⚠ Bairros sem pavimentação</h3>
+          <ul class="tag-list" id="lista-sem-pav"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Pavimentação por bairro (%)</h3>
+          <canvas id="chart-pav-bairro" height="200"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>Bairros mais populosos</h3>
+          <canvas id="chart-populacao" height="200"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>Uso do solo (lotes)</h3>
+          <canvas id="chart-uso" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Overlay de carregamento / aviso -->
+  <div class="overlay-msg" id="overlay-msg" hidden>
+    <div class="overlay-card" id="overlay-card"></div>
+  </div>
+
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/vendor/leaflet.heat/leaflet-heat.js"></script>
+  <script src="/vendor/chart/chart.umd.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

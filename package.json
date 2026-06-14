@@ -1,0 +1,25 @@
+{
+  "name": "portifolio-eixo-webgis",
+  "version": "1.0.0",
+  "description": "WebGIS municipal — visualizacao de lotes, quadras, ruas e edificacoes com dashboard de gestao, mapa de calor e ortofoto. PostGIS + Neon + Render.",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "init-db": "node scripts/init-db.js",
+    "seed": "node scripts/seed-demo.js",
+    "import": "node scripts/import-geojson.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.13.1"
+  },
+  "author": "BzRTech",
+  "license": "MIT"
+}
