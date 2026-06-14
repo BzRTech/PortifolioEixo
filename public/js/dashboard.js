@@ -67,9 +67,13 @@ export function renderDashboard(d) {
 
   // ---- Bairros sem pavimentacao ----
   const semPav = d.bairrosSemPavimentacao || [];
+  const temRuas = (r.total || 0) > 0;
   const lista = document.getElementById('lista-sem-pav');
   const card = document.getElementById('card-sem-pav');
-  if (semPav.length) {
+  if (!temRuas) {
+    card.querySelector('h3').textContent = 'Pavimentação';
+    lista.innerHTML = '<li class="ok">Sem dados de vias (ruas) cadastrados</li>';
+  } else if (semPav.length) {
     card.querySelector('h3').textContent = `⚠ Bairros sem pavimentação (${semPav.length})`;
     lista.innerHTML = semPav.map((b) => `<li>${b}</li>`).join('');
   } else {
