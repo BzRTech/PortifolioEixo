@@ -14,5 +14,9 @@ services:
         sync: false
       - key: ORTHO_TILE_URL
         sync: false
+      # Mude para "true" para carregar a cidade de demonstracao no primeiro deploy
+      # (somente se o banco estiver vazio). Use "false" com dados reais.
+      - key: SEED_DEMO
+        value: "false"
       - key: NODE_VERSION
         value: "22"

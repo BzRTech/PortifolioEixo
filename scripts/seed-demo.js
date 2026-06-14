@@ -10,6 +10,8 @@
 import { ensureSchema } from '../src/schema.js';
 import { importFeatureCollection } from '../src/import.js';
 import { closePool, isConfigured } from '../src/db.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const CENTER = {
   lat: Number(process.env.MAP_CENTER_LAT) || -22.0178,
@@ -157,21 +159,33 @@ function buildCity() {
   return { bairros, quadras, lotes, ruas, edificacoes };
 }
 
-(async () => {
-  if (!isConfigured) {
-    console.error('DATABASE_URL nao configurada. Crie um .env a partir de .env.example.');
-    process.exit(1);
-  }
+/** Gera e carrega a cidade de demonstracao. Reutilizado pelo servidor no boot. */
+export async function seedDemo({ truncate = true, log = () => {} } = {}) {
   await ensureSchema();
   const city = buildCity();
-  console.log('Gerando "Cidade Modelo" e carregando no banco...');
+  const result = {};
   for (const layer of ['bairros', 'quadras', 'lotes', 'ruas', 'edificacoes']) {
-    const res = await importFeatureCollection(layer, fc(city[layer]), { truncate: true });
-    console.log(`  ${layer.padEnd(12)} ${String(res.inserted).padStart(5)} feicoes`);
+    const res = await importFeatureCollection(layer, fc(city[layer]), { truncate });
+    result[layer] = res.inserted;
+    log(`  ${layer.padEnd(12)} ${String(res.inserted).padStart(5)} feicoes`);
   }
-  console.log('Seed concluido. Rode "npm start" e abra http://localhost:3000');
-  await closePool();
-})().catch((e) => {
-  console.error('Erro no seed:', e.message);
-  process.exit(1);
-});
+  return result;
+}
+
+// Executa apenas quando chamado diretamente (npm run seed), nao quando importado.
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isMain) {
+  (async () => {
+    if (!isConfigured) {
+      console.error('DATABASE_URL nao configurada. Crie um .env a partir de .env.example.');
+      process.exit(1);
+    }
+    console.log('Gerando "Cidade Modelo" e carregando no banco...');
+    await seedDemo({ truncate: true, log: console.log });
+    console.log('Seed concluido. Rode "npm start" e abra http://localhost:3000');
+    await closePool();
+  })().catch((e) => {
+    console.error('Erro no seed:', e.message);
+    process.exit(1);
+  });
+}

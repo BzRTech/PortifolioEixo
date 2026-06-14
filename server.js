@@ -13,6 +13,7 @@ import {
   isValidLayer, getLayerGeoJSON, getDashboard, getHeatmap,
   getExtent, getCounts, getBairros,
 } from './src/queries.js';
+import { seedDemo } from './scripts/seed-demo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -138,6 +139,16 @@ async function start() {
     try {
       await ensureSchema();
       console.log('[db] schema verificado.');
+      // Auto-seed opcional: util para um deploy de demonstracao sem shell.
+      if (String(process.env.SEED_DEMO || '') === 'true') {
+        const counts = await getCounts();
+        const total = Object.values(counts).reduce((s, n) => s + Number(n || 0), 0);
+        if (total === 0) {
+          console.log('[db] SEED_DEMO=true e banco vazio — carregando cidade de demonstracao...');
+          await seedDemo({ truncate: true, log: console.log });
+          console.log('[db] seed de demonstracao concluido.');
+        }
+      }
     } catch (e) {
       console.error('[db] nao foi possivel preparar o schema:', e.message);
     }
