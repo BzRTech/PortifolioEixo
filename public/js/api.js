@@ -1,0 +1,28 @@
+// Cliente da API.
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) {
+    let msg = r.statusText;
+    try { msg = (await r.json()).error || msg; } catch { /* ignore */ }
+    const err = new Error(msg);
+    err.status = r.status;
+    throw err;
+  }
+  return r.json();
+}
+
+export const api = {
+  config: () => getJSON('/api/config'),
+  health: () => getJSON('/api/health'),
+  counts: () => getJSON('/api/counts'),
+  bairros: () => getJSON('/api/bairros'),
+  extent: () => getJSON('/api/extent'),
+  dashboard: () => getJSON('/api/dashboard'),
+  heatmap: (metric) => getJSON('/api/heatmap?metric=' + encodeURIComponent(metric)),
+  layer: (id, params = {}) => {
+    const q = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)
+    ).toString();
+    return getJSON(`/api/layers/${id}` + (q ? `?${q}` : ''));
+  },
+};

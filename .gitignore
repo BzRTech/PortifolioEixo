@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# Dados reais de GeoJSON (importe via npm run import). Mantemos a pasta versionada.
+data/*.geojson
+data/*.json
+!data/.gitkeep
+
+# Tiles XYZ da ortofoto (geralmente grandes). Coloque sua pasta em tiles/ortho/{z}/{x}/{y}.png
+tiles/
+!tiles/.gitkeep
+
+.DS_Store
+.idea/
+.vscode/
