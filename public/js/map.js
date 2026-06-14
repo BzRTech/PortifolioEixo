@@ -12,8 +12,8 @@ const USO_COLORS = {
 };
 const usoColor = (u) => USO_COLORS[String(u || '').toLowerCase()] || '#94a3b8';
 
-const RUA_COLORS = { sim: '#2dd4bf', nao: '#f43f5e', info: '#94a3b8' };
-const POP_RAMP = ['#0e3b43', '#11707a', '#1aa6a0', '#5fd6b0', '#aef0c8'];
+const RUA_COLORS = { sim: '#34d399', nao: '#ef4444', info: '#9aa0a6' };
+const POP_RAMP = ['#4a3b00', '#7a5f00', '#b08a00', '#e6bb00', '#ffe066'];
 
 const PANES = ['bairros', 'quadras', 'lotes', 'edificacoes', 'heat', 'ruas'];
 
@@ -183,8 +183,8 @@ export const gis = {
     if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
     if (!points || !points.length) { this.updateLegend(); return; }
     const grad = metric === 'nao_pavimentadas'
-      ? { 0.2: '#1e3a8a', 0.5: '#f59e0b', 0.8: '#f43f5e', 1: '#fecaca' }
-      : { 0.2: '#0e3b43', 0.5: '#1aa6a0', 0.8: '#5fd6b0', 1: '#f0fff7' };
+      ? { 0.2: '#1f2937', 0.5: '#fb923c', 0.8: '#ef4444', 1: '#fee2e2' }
+      : { 0.2: '#3a2e00', 0.5: '#b08a00', 0.8: '#f6c500', 1: '#fff3c4' };
     const maxW = Math.max(1, ...points.map((p) => p[2]));
     heatLayer = L.heatLayer(points, {
       radius: 28, blur: 22, max: maxW, maxZoom: 18, pane: 'heat',
@@ -222,7 +222,7 @@ export const gis = {
     }
     if (heatLayer) {
       groups.push(`<div class="group"><h4>Mapa de calor</h4>
-        <div class="row"><span class="swatch" style="background:linear-gradient(90deg,#0e3b43,#1aa6a0,#5fd6b0)"></span>baixo → alto</div></div>`);
+        <div class="row"><span class="swatch" style="background:linear-gradient(90deg,#3a2e00,#b08a00,#f6c500)"></span>baixo → alto</div></div>`);
     }
     if (!groups.length) { legendEl.hidden = true; return; }
     legendEl.hidden = false;

@@ -2,7 +2,7 @@
 import { fmtInt, fmtNum, fmtLen, fmtPct } from './format.js';
 
 const charts = {};
-const COL = { accent: '#2dd4bf', accent2: '#38bdf8', danger: '#f43f5e', warn: '#f59e0b', gray: '#64748b', ok: '#22c55e' };
+const COL = { accent: '#34d399', accent2: '#e6bb00', danger: '#ef4444', warn: '#fb923c', gray: '#64748b', ok: '#22c55e' };
 const USO_COLORS = {
   residencial: '#38bdf8', comercial: '#f59e0b', industrial: '#a78bfa',
   misto: '#34d399', servicos: '#f472b6', vazio: '#64748b',

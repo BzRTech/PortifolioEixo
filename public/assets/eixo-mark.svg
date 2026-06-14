@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="EIXO">
+  <!-- Selo hexagonal (placeholder da marca EIXO). Substitua por public/assets/eixo-mark.svg oficial. -->
+  <path d="M50 3 L91.4 26.5 L91.4 73.5 L50 97 L8.6 73.5 L8.6 26.5 Z" fill="#F6C500"/>
+  <path d="M50 16 L80.3 33 L80.3 67 L50 84 L19.7 67 L19.7 33 Z" fill="none" stroke="#1f2024" stroke-width="3.2" opacity="0.9"/>
+  <g stroke="#1f2024" stroke-width="4.2" stroke-linecap="round" opacity="0.9">
+    <line x1="38" y1="42" x2="62" y2="42"/>
+    <line x1="38" y1="50" x2="62" y2="50"/>
+    <line x1="38" y1="58" x2="62" y2="58"/>
+  </g>
+</svg>
