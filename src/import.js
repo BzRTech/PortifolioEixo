@@ -42,9 +42,36 @@ function toStr(v) {
   return s === '' ? null : s;
 }
 
+// Campos pessoais (LGPD) que nunca devem ser armazenados em `props`.
+const PII_KEYS = new Set([
+  'contrib', 'contribuinte', 'cpf', 'cpf_cnpj', 'cnpj', 'endcontrib', 'numcontrib',
+  'baircontri', 'cidcontrib', 'cepcontrib', 'ocupante', 'cpf_ocup', 'proprietario',
+  'nome_prop', 'doc', 'rg',
+]);
+
+/** Remove campos sensiveis e valores vazios, deixando o `props` enxuto. */
+function cleanProps(props) {
+  const out = {};
+  for (const [k, v] of Object.entries(props || {})) {
+    if (PII_KEYS.has(k.toLowerCase())) continue;
+    if (v === null || v === undefined) continue;
+    if (typeof v === 'string' && v.trim() === '') continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+/** Normaliza nome de bairro: remove o prefixo redundante "BAIRRO ". */
+function normBairro(v) {
+  const s = toStr(v);
+  if (!s) return null;
+  return s.replace(/^bairro\s+/i, '').trim() || null;
+}
+
 const PAV_SIM = new Set([
   'true', 't', 'sim', 's', '1', 'pavimentada', 'pavimentado', 'pavimentacao',
-  'asfalto', 'asfaltada', 'asfaltado', 'calcamento', 'calçamento', 'bloquete',
+  'asfalto', 'asfaltada', 'asfaltado', 'asfaltico', 'revestimento asfaltico',
+  'revestimento asfáltico', 'calcamento', 'calçamento', 'bloquete',
   'paralelepipedo', 'paralelepípedo', 'concreto', 'intertravado',
 ]);
 const PAV_NAO = new Set([
@@ -79,41 +106,50 @@ const MAPPERS = {
     columns: ['codigo', 'bairro', 'area_m2'],
     map: (p) => ({
       codigo: toStr(pick(p, ['codigo', 'código', 'code', 'quadra', 'cod_quadra', 'id_quadra', 'numero'])),
-      bairro: toStr(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
+      bairro: normBairro(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
       area_m2: toNum(pick(p, ['area_m2', 'area', 'shape_area', 'st_area'])),
     }),
   },
   lotes: {
     columns: ['codigo', 'quadra', 'bairro', 'uso', 'area_m2'],
-    map: (p) => ({
-      codigo: toStr(pick(p, ['codigo', 'código', 'code', 'lote', 'inscricao', 'inscrição', 'matricula', 'id_lote'])),
-      quadra: toStr(pick(p, ['quadra', 'cod_quadra', 'id_quadra', 'block'])),
-      bairro: toStr(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
-      uso: toStr(pick(p, ['uso', 'use', 'uso_solo', 'uso_do_solo', 'categoria', 'tipo_uso', 'land_use'])),
-      area_m2: toNum(pick(p, ['area_m2', 'area', 'shape_area', 'st_area', 'area_lote'])),
-    }),
+    map: (p) => {
+      const st = toStr(pick(p, ['st', 'setor']));
+      const qd = toStr(pick(p, ['quadra', 'qd', 'cod_quadra', 'id_quadra', 'block']));
+      const lt = toStr(pick(p, ['lt', 'lote']));
+      const cod = toStr(pick(p, ['codigo', 'código', 'code', 'inscricao', 'inscrição', 'insc_geral', 'matricula', 'id_lote']));
+      return {
+        // Usa o codigo direto; se ausente, compoe Setor.Quadra.Lote.
+        codigo: cod || ([st, qd, lt].some(Boolean) ? [st, qd, lt].filter(Boolean).join('-') : null),
+        quadra: qd,
+        bairro: normBairro(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
+        uso: toStr(pick(p, ['uso', 'use', 'uso_solo', 'uso_do_solo', 'categoria', 'tipo_uso', 'land_use'])),
+        area_m2: toNum(pick(p, ['area_m2', 'area', 'arealote', 'area_lote', 'shape_area', 'st_area'])),
+      };
+    },
   },
   ruas: {
     columns: ['nome', 'bairro', 'pavimentada', 'tipo_pavimento', 'extensao_m'],
     map: (p) => {
       const tipo = toStr(pick(p, ['tipo_pavimento', 'pavimento', 'tipo_pav', 'revestimento', 'surface', 'tipo']));
-      let pav = toBool(pick(p, ['pavimentada', 'pavimentado', 'paviment', 'pavimentacao', 'pavimentação', 'paved', 'situacao_pavimento']));
-      if (pav === null && tipo) pav = toBool(tipo); // infere a partir do tipo de pavimento
+      // Le a situacao (pavimentada/nao) de varios campos; se ausente, infere do tipo.
+      let pav = toBool(pick(p, ['pavimentada', 'pavimentado', 'paviment', 'pavimentacao', 'pavimentação', 'paved', 'situacao_pavimento', 'status', 'situacao']));
+      if (pav === null && tipo) pav = toBool(tipo);
       return {
         nome: toStr(pick(p, ['nome', 'name', 'logradouro', 'rua', 'nm_rua', 'descricao', 'nm_logr'])),
-        bairro: toStr(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
+        bairro: normBairro(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
         pavimentada: pav,
         tipo_pavimento: tipo,
-        extensao_m: toNum(pick(p, ['extensao_m', 'extensao', 'extensão', 'comprimento', 'length', 'shape_leng', 'st_length'])),
+        // COMP_TRECH/COMP_RUA em metros; evita Shape_Leng (vem em graus).
+        extensao_m: toNum(pick(p, ['extensao_m', 'extensao', 'extensão', 'comp_trech', 'comp_rua', 'comprimento', 'length', 'st_length'])),
       };
     },
   },
   edificacoes: {
     columns: ['codigo', 'uso', 'bairro', 'n_pavimentos', 'area_m2'],
     map: (p) => ({
-      codigo: toStr(pick(p, ['codigo', 'código', 'code', 'id_edif', 'inscricao', 'matricula'])),
+      codigo: toStr(pick(p, ['codigo', 'código', 'code', 'objectid', 'id_edif', 'fid_1', 'inscricao', 'matricula'])),
       uso: toStr(pick(p, ['uso', 'use', 'tipo_uso', 'categoria', 'finalidade'])),
-      bairro: toStr(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
+      bairro: normBairro(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
       n_pavimentos: toInt(pick(p, ['n_pavimentos', 'pavimentos', 'andares', 'n_andares', 'floors', 'num_pav', 'qt_pavimentos'])),
       area_m2: toNum(pick(p, ['area_m2', 'area', 'shape_area', 'st_area', 'area_construida'])),
     }),
@@ -165,10 +201,10 @@ export async function importFeatureCollection(layer, featureCollection, options 
     const rows = [];
     for (const feat of features) {
       if (!feat || !feat.geometry) { skipped++; continue; }
-      const props = feat.properties || {};
-      const mapped = mapper.map(props);
+      const rawProps = feat.properties || {};
+      const mapped = mapper.map(rawProps);
       const values = cols.map((c) => mapped[c]);
-      rows.push({ values, props, geometry: feat.geometry });
+      rows.push({ values, props: cleanProps(rawProps), geometry: feat.geometry });
     }
 
     for (let i = 0; i < rows.length; i += batchSize) {

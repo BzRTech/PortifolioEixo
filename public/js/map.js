@@ -22,6 +22,7 @@ let baseLayers = {};
 let orthoLayer = null;
 const overlays = {};        // id -> L.geoJSON
 const overlayState = {};    // id -> bool (visivel)
+const renderers = {};       // id -> L.canvas (um por pane, para performance)
 let heatLayer = null;
 let popRange = { min: 0, max: 1 };
 const legendEl = document.getElementById('legend');
@@ -123,6 +124,8 @@ export const gis = {
     PANES.forEach((name, i) => {
       map.createPane(name);
       map.getPane(name).style.zIndex = String(410 + i * 10);
+      // Renderizador canvas por pane: aguenta dezenas de milhares de feicoes.
+      if (name !== 'heat') renderers[name] = L.canvas({ pane: name, padding: 0.5 });
     });
 
     const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -162,7 +165,9 @@ export const gis = {
       const pops = (geojson.features || []).map((f) => f.properties?.populacao).filter((v) => v != null);
       popRange = { min: Math.min(...pops, 0), max: Math.max(...pops, 1) };
     }
-    overlays[id] = L.geoJSON(geojson, { pane: id, style: styleFor(id), onEachFeature: onEachFeature(id) });
+    overlays[id] = L.geoJSON(geojson, {
+      pane: id, renderer: renderers[id], style: styleFor(id), onEachFeature: onEachFeature(id),
+    });
     if (overlayState[id]) overlays[id].addTo(map);
   },
 

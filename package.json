@@ -12,7 +12,9 @@
     "dev": "node --watch server.js",
     "init-db": "node scripts/init-db.js",
     "seed": "node scripts/seed-demo.js",
-    "import": "node scripts/import-geojson.js"
+    "import": "node scripts/import-geojson.js",
+    "derive-bairros": "node scripts/derive-bairros.js",
+    "reset-db": "node scripts/reset-db.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

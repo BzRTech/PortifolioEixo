@@ -132,6 +132,7 @@ app.get('/api/layers/:layer', asyncRoute(async (req, res) => {
     bairro: req.query.bairro ? String(req.query.bairro) : undefined,
     limit: req.query.limit ? Number(req.query.limit) : undefined,
     simplify: req.query.simplify ? Number(req.query.simplify) : undefined,
+    includeProps: req.query.props === '1' || req.query.props === 'true',
   });
   res.json(fc);
 }));

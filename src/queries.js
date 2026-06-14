@@ -21,7 +21,7 @@ export async function getLayerGeoJSON(layer, opts = {}) {
   const cfg = TABLES[layer];
   if (!cfg) throw new Error('Camada invalida: ' + layer);
 
-  const { bbox, bairro, limit, simplify } = opts;
+  const { bbox, bairro, limit, simplify, includeProps } = opts;
   const where = [];
   const params = [];
 
@@ -43,6 +43,11 @@ export async function getLayerGeoJSON(layer, opts = {}) {
     Number.isFinite(tol) && tol > 0
       ? `ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, ${tol}), 6)::jsonb`
       : `ST_AsGeoJSON(geom, 6)::jsonb`;
+  // Por padrao retornamos so as colunas (popups usam elas). `props` completo
+  // (todas as propriedades originais) so quando includeProps for true.
+  const propsExpr = includeProps
+    ? `((to_jsonb(t) - 'geom' - 'props') || COALESCE(t.props, '{}'::jsonb))`
+    : `(to_jsonb(t) - 'geom' - 'props')`;
 
   const sql = `
     SELECT jsonb_build_object(
@@ -54,7 +59,7 @@ export async function getLayerGeoJSON(layer, opts = {}) {
         'type', 'Feature',
         'id', t.id,
         'geometry', ${geomExpr},
-        'properties', (to_jsonb(t) - 'geom' - 'props') || COALESCE(t.props, '{}'::jsonb)
+        'properties', ${propsExpr}
       ) AS feature
       FROM ${cfg.table} t
       ${whereSql}
@@ -70,8 +75,9 @@ export async function getBairros() {
   const r = await query(`
     SELECT DISTINCT b AS bairro FROM (
       SELECT nome AS b FROM bairros WHERE nome IS NOT NULL AND nome <> ''
-      UNION
-      SELECT bairro AS b FROM ruas WHERE bairro IS NOT NULL AND bairro <> ''
+      UNION SELECT bairro FROM ruas        WHERE bairro IS NOT NULL AND bairro <> ''
+      UNION SELECT bairro FROM lotes       WHERE bairro IS NOT NULL AND bairro <> ''
+      UNION SELECT bairro FROM quadras     WHERE bairro IS NOT NULL AND bairro <> ''
     ) x ORDER BY bairro`);
   return r.rows.map((row) => row.bairro);
 }
