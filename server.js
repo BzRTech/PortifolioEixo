@@ -86,8 +86,11 @@ function parseBbox(value) {
 
 // ---- Rotas da API ---------------------------------------------------------
 app.get('/api/health', asyncRoute(async (req, res) => {
+  // Sempre 200 enquanto o processo HTTP estiver vivo (liveness probe).
+  // O status do banco vai no corpo — assim um banco ainda nao configurado
+  // ou "dormindo" no Neon nao derruba o health check do Render.
   const hc = await healthcheck();
-  res.status(hc.ok ? 200 : 503).json(hc);
+  res.status(200).json(hc);
 }));
 
 app.get('/api/config', (req, res) => res.json(buildPublicConfig()));
