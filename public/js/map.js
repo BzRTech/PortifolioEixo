@@ -131,7 +131,9 @@ export const gis = {
     baseLayers = { 'Mapa escuro': dark, 'Mapa claro': osm, 'Satélite': sat };
 
     if (config.ortho && config.ortho.url) {
-      orthoLayer = L.tileLayer(config.ortho.url, {
+      // A URL pode conter {municipio} (substituido pela cidade selecionada).
+      this._orthoTemplate = config.ortho.url;
+      orthoLayer = L.tileLayer(this._orthoTemplate.replace('{municipio}', ''), {
         attribution: config.ortho.attribution || 'Ortofoto',
         minZoom: 0,
         maxZoom: config.map.maxZoom,
@@ -151,6 +153,12 @@ export const gis = {
   setBase(name) {
     Object.values(baseLayers).forEach((l) => map.removeLayer(l));
     if (baseLayers[name]) baseLayers[name].addTo(map);
+  },
+
+  // Aponta a ortofoto para a pasta da cidade (placeholder {municipio} na URL).
+  setOrthoMunicipio(m) {
+    if (!orthoLayer || !this._orthoTemplate || !this._orthoTemplate.includes('{municipio}')) return;
+    orthoLayer.setUrl(this._orthoTemplate.replace('{municipio}', encodeURIComponent(m || '')), false);
   },
 
   setOverlayData(id, geojson) {
