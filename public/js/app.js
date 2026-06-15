@@ -70,7 +70,7 @@ async function loadBairrosList() {
 async function refitExtent() {
   try {
     const { extent } = await api.extent(scopeArg());
-    if (extent) gis.fit(extent);
+    if (extent) { gis.fit(extent); gis.setOrthoBounds(extent); }
   } catch { /* usa centro padrao */ }
 }
 

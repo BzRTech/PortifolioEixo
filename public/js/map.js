@@ -163,6 +163,13 @@ export const gis = {
     orthoLayer.setUrl(this._orthoTemplate.replace('{municipio}', encodeURIComponent(m || '')), false);
   },
 
+  // Restringe a ortofoto a extensao da cidade (evita pedir tiles fora da cobertura).
+  setOrthoBounds(extent) {
+    if (!orthoLayer || !extent || extent.length !== 4) return;
+    orthoLayer.options.bounds = L.latLngBounds([[extent[1], extent[0]], [extent[3], extent[2]]]);
+    if (map.hasLayer(orthoLayer)) orthoLayer.redraw();
+  },
+
   setOverlayData(id, geojson) {
     if (overlays[id]) { map.removeLayer(overlays[id]); delete overlays[id]; }
     overlays[id] = L.geoJSON(geojson, {
