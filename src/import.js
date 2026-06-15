@@ -67,6 +67,13 @@ function cleanProps(props) {
  * conectores (DE/DA/DO/DOS/DAS). Ex.: "Distrito de Brejinho" e
  * "Distrito Brejinho" viram "DISTRITO BREJINHO"; "Brayner Colaço" -> "BRAYNER COLACO".
  */
+// Apelidos manuais (de-para) para erros de digitacao da fonte que a normalizacao
+// automatica nao resolve. Chave/valor ja normalizados (sem acento, MAIUSCULAS,
+// sem conectores). Adicione novos casos aqui conforme aparecerem.
+const BAIRRO_ALIAS = {
+  'JULINANA PIRES': 'JULIANA PIRES',
+};
+
 function normBairro(v) {
   let s = toStr(v);
   if (!s) return null;
@@ -76,7 +83,8 @@ function normBairro(v) {
     .replace(/\b(DE|DA|DO|DOS|DAS)\b/g, ' ')          // remove conectores
     .replace(/\s+/g, ' ')
     .trim();
-  return s || null;
+  if (!s) return null;
+  return BAIRRO_ALIAS[s] || s;
 }
 
 const PAV_SIM = new Set([
