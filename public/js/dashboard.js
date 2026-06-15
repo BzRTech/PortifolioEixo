@@ -32,12 +32,12 @@ export function renderDashboard(d) {
 
   // ---- KPIs ----
   document.getElementById('kpis').innerHTML = [
-    kpi(fmtInt(t.populacao_total), 'População total', 'accent'),
-    kpi(fmtInt(t.total_bairros), 'Bairros'),
+    kpi(fmtInt(t.total_bairros), 'Bairros', 'accent'),
     kpi(fmtPct(pctPav), 'Vias pavimentadas (ext.)'),
     kpi(fmtLen(extNaoPav), 'Não pavimentadas', 'danger'),
     kpi(fmtInt(t.total_lotes), 'Lotes'),
     kpi(fmtInt(t.total_edificacoes), 'Edificações'),
+    kpi(fmtInt(t.total_quadras), 'Quadras'),
   ].join('');
 
   // ---- Barra de proporcao de pavimentacao (por extensao) ----
@@ -102,26 +102,6 @@ export function renderDashboard(d) {
       indexAxis: 'y',
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => fmtPct(c.parsed.x) } } },
       scales: { x: { max: 100, grid: { color: gridColor } }, y: { grid: { display: false } } },
-    },
-  });
-
-  // ---- Barra horizontal: populacao por bairro ----
-  const bp = (d.bairrosPopulosos || []).slice(0, 10);
-  destroy('pop');
-  charts.pop = new Chart(document.getElementById('chart-populacao'), {
-    type: 'bar',
-    data: {
-      labels: bp.map((x) => x.nome),
-      datasets: [{
-        label: 'População',
-        data: bp.map((x) => Number(x.populacao) || 0),
-        backgroundColor: COL.accent2, borderRadius: 4,
-      }],
-    },
-    options: {
-      indexAxis: 'y',
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => fmtInt(c.parsed.x) + ' hab.' } } },
-      scales: { x: { grid: { color: gridColor } }, y: { grid: { display: false } } },
     },
   });
 

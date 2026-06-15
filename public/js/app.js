@@ -19,6 +19,8 @@ const els = {
   filtroMunicipio: document.getElementById('filtro-municipio'),
   campoMunicipio: document.getElementById('campo-municipio'),
   btnDash: document.getElementById('btn-dashboard'),
+  btnCamadas: document.getElementById('btn-camadas'),
+  controls: document.getElementById('controls'),
   dash: document.getElementById('dashboard'),
   dashClose: document.getElementById('dashboard-close'),
   msg: document.getElementById('overlay-msg'),
@@ -135,6 +137,8 @@ function buildControls(config) {
     els.dash.classList.add('hidden');
     els.btnDash.setAttribute('aria-pressed', 'false');
   });
+  // Mobile: botao abre/fecha a gaveta de camadas.
+  els.btnCamadas.addEventListener('click', () => els.controls.classList.toggle('open'));
   document.querySelectorAll('.panel-toggle[data-target]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const body = document.getElementById(btn.dataset.target);
@@ -148,10 +152,15 @@ async function setupMunicipios() {
   let municipios = [];
   try { municipios = await api.municipios(); } catch { /* sem municipios */ }
   if (municipios.length) {
-    els.filtroMunicipio.innerHTML = municipios.map((m) => `<option value="${m}">${m}</option>`).join('');
-    els.campoMunicipio.hidden = false;
     currentMunicipio = municipios[0];
-    els.filtroMunicipio.value = currentMunicipio;
+    // O seletor so aparece quando ha mais de uma cidade para escolher.
+    if (municipios.length > 1) {
+      els.filtroMunicipio.innerHTML = municipios.map((m) => `<option value="${m}">${m}</option>`).join('');
+      els.filtroMunicipio.value = currentMunicipio;
+      els.campoMunicipio.hidden = false;
+    } else {
+      els.campoMunicipio.hidden = true;
+    }
   } else {
     els.campoMunicipio.hidden = true;
     currentMunicipio = '';
@@ -213,6 +222,11 @@ async function main() {
   const ok = await checkData(config);
   if (!ok) return;
   hideMessage();
+  // No celular, comeca com o painel fechado para o mapa ficar visivel.
+  if (window.matchMedia('(max-width: 820px)').matches) {
+    els.dash.classList.add('hidden');
+    els.btnDash.setAttribute('aria-pressed', 'false');
+  }
   await setupMunicipios();
   await loadData();
 }
