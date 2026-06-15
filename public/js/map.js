@@ -14,6 +14,16 @@ const usoColor = (u) => USO_COLORS[String(u || '').toLowerCase()] || '#94a3b8';
 
 const RUA_COLORS = { sim: '#34d399', nao: '#ef4444', info: '#9aa0a6' };
 
+// Cores por tipo de pavimento (para colorir as ruas "por tipo").
+const TIPO_COLORS = {
+  'asfalto': '#475569', 'revestimento asfaltico': '#475569', 'revestimento asfáltico': '#475569',
+  'paralelepipedo': '#38bdf8', 'paralelepípedo': '#38bdf8',
+  'bloquete': '#a78bfa', 'concreto': '#cbd5e1', 'intertravado': '#34d399',
+  'leito natural': '#b45309', 'terra': '#b45309', 'viela': '#f59e0b',
+};
+const tipoColor = (t) => TIPO_COLORS[String(t || '').toLowerCase()] || '#9aa0a6';
+const titleCase = (s) => String(s).toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+
 const PANES = ['bairros', 'quadras', 'lotes', 'edificacoes', 'heat', 'ruas'];
 
 let map;
@@ -23,6 +33,8 @@ const overlays = {};        // id -> L.geoJSON
 const overlayState = {};    // id -> bool (visivel)
 const renderers = {};       // id -> L.canvas (um por pane, para performance)
 let heatLayer = null;
+let ruasMode = 'situacao';  // 'situacao' (pavimentada) ou 'tipo' (tipo de pavimento)
+let ruasTipos = [];         // tipos distintos presentes nos dados carregados
 const legendEl = document.getElementById('legend');
 
 // ---------------------------------------------------------------------------
@@ -32,8 +44,13 @@ function styleFor(id) {
   switch (id) {
     case 'ruas':
       return (f) => {
-        const p = f.properties.pavimentada;
-        const color = p === true ? RUA_COLORS.sim : p === false ? RUA_COLORS.nao : RUA_COLORS.info;
+        let color;
+        if (ruasMode === 'tipo') {
+          color = tipoColor(f.properties.tipo_pavimento);
+        } else {
+          const p = f.properties.pavimentada;
+          color = p === true ? RUA_COLORS.sim : p === false ? RUA_COLORS.nao : RUA_COLORS.info;
+        }
         return { color, weight: 3, opacity: 0.95, lineCap: 'round' };
       };
     case 'bairros':
@@ -160,7 +177,8 @@ export const gis = {
   // Aponta a ortofoto para a pasta da cidade (placeholder {municipio} na URL).
   setOrthoMunicipio(m) {
     if (!orthoLayer || !this._orthoTemplate || !this._orthoTemplate.includes('{municipio}')) return;
-    orthoLayer.setUrl(this._orthoTemplate.replace('{municipio}', encodeURIComponent(m || '')), false);
+    const clean = String(m || '').replace(/\s+/g, ' ').trim(); // colapsa espacos duplicados
+    orthoLayer.setUrl(this._orthoTemplate.replace('{municipio}', encodeURIComponent(clean)), false);
   },
 
   // Restringe a ortofoto a extensao da cidade (evita pedir tiles fora da cobertura).
@@ -172,10 +190,21 @@ export const gis = {
 
   setOverlayData(id, geojson) {
     if (overlays[id]) { map.removeLayer(overlays[id]); delete overlays[id]; }
+    if (id === 'ruas') {
+      const set = new Set();
+      (geojson.features || []).forEach((f) => { const t = f.properties?.tipo_pavimento; if (t) set.add(String(t)); });
+      ruasTipos = [...set].sort();
+    }
     overlays[id] = L.geoJSON(geojson, {
       pane: id, renderer: renderers[id], style: styleFor(id), onEachFeature: onEachFeature(id),
     });
     if (overlayState[id]) overlays[id].addTo(map);
+  },
+
+  setRuasMode(mode) {
+    ruasMode = mode === 'tipo' ? 'tipo' : 'situacao';
+    if (overlays.ruas) overlays.ruas.setStyle(styleFor('ruas'));
+    this.updateLegend();
   },
 
   hasOverlay(id) { return Boolean(overlays[id]); },
@@ -221,10 +250,16 @@ export const gis = {
   updateLegend() {
     const groups = [];
     if (overlayState.ruas) {
-      groups.push(`<div class="group"><h4>Ruas</h4>
-        <div class="row"><span class="swatch line" style="background:${RUA_COLORS.sim}"></span>Pavimentada</div>
-        <div class="row"><span class="swatch line" style="background:${RUA_COLORS.nao}"></span>Não pavimentada</div>
-        <div class="row"><span class="swatch line" style="background:${RUA_COLORS.info}"></span>Sem informação</div></div>`);
+      if (ruasMode === 'tipo') {
+        const items = (ruasTipos.length ? ruasTipos : Object.keys(TIPO_COLORS))
+          .map((t) => `<div class="row"><span class="swatch line" style="background:${tipoColor(t)}"></span>${titleCase(t)}</div>`).join('');
+        groups.push(`<div class="group"><h4>Ruas (tipo)</h4>${items}</div>`);
+      } else {
+        groups.push(`<div class="group"><h4>Ruas</h4>
+          <div class="row"><span class="swatch line" style="background:${RUA_COLORS.sim}"></span>Pavimentada</div>
+          <div class="row"><span class="swatch line" style="background:${RUA_COLORS.nao}"></span>Não pavimentada</div>
+          <div class="row"><span class="swatch line" style="background:${RUA_COLORS.info}"></span>Sem informação</div></div>`);
+      }
     }
     if (overlayState.lotes || overlayState.edificacoes) {
       const items = Object.entries(USO_COLORS)
