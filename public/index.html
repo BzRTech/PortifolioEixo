@@ -20,6 +20,7 @@
       </div>
     </div>
     <div class="top-actions">
+      <button id="btn-camadas" class="btn mobile-only" aria-label="Camadas" title="Camadas">☰</button>
       <label class="field" id="campo-municipio" hidden>
         <span>Município</span>
         <select id="filtro-municipio"></select>
@@ -29,7 +30,7 @@
         <select id="filtro-bairro"><option value="">Todos</option></select>
       </label>
       <button id="btn-dashboard" class="btn btn-primary" aria-pressed="true">
-        <span class="ico">▦</span> Dashboard
+        <span class="ico">▦</span> <span class="btn-label">Dashboard</span>
       </button>
     </div>
   </header>
@@ -59,7 +60,6 @@
             <span>Ativar</span>
           </label>
           <select id="heat-metric" class="select-full">
-            <option value="populacao">População por bairro</option>
             <option value="nao_pavimentadas">Ruas não pavimentadas</option>
             <option value="edificacoes">Densidade de edificações</option>
             <option value="lotes">Densidade de lotes</option>
@@ -96,11 +96,6 @@
         <div class="card">
           <h3>Pavimentação por bairro (%)</h3>
           <canvas id="chart-pav-bairro" height="200"></canvas>
-        </div>
-
-        <div class="card">
-          <h3>Bairros mais populosos</h3>
-          <canvas id="chart-populacao" height="200"></canvas>
         </div>
 
         <div class="card">

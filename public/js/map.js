@@ -13,7 +13,6 @@ const USO_COLORS = {
 const usoColor = (u) => USO_COLORS[String(u || '').toLowerCase()] || '#94a3b8';
 
 const RUA_COLORS = { sim: '#34d399', nao: '#ef4444', info: '#9aa0a6' };
-const POP_RAMP = ['#4a3b00', '#7a5f00', '#b08a00', '#e6bb00', '#ffe066'];
 
 const PANES = ['bairros', 'quadras', 'lotes', 'edificacoes', 'heat', 'ruas'];
 
@@ -24,15 +23,7 @@ const overlays = {};        // id -> L.geoJSON
 const overlayState = {};    // id -> bool (visivel)
 const renderers = {};       // id -> L.canvas (um por pane, para performance)
 let heatLayer = null;
-let popRange = { min: 0, max: 1 };
 const legendEl = document.getElementById('legend');
-
-function popColor(v) {
-  if (v == null) return '#334155';
-  const { min, max } = popRange;
-  const t = max > min ? (v - min) / (max - min) : 0.5;
-  return POP_RAMP[Math.min(POP_RAMP.length - 1, Math.floor(t * POP_RAMP.length))];
-}
 
 // ---------------------------------------------------------------------------
 // Estilos por camada
@@ -46,9 +37,9 @@ function styleFor(id) {
         return { color, weight: 3, opacity: 0.95, lineCap: 'round' };
       };
     case 'bairros':
-      return (f) => ({
-        color: '#2dd4bf', weight: 1.5, fillColor: popColor(f.properties.populacao),
-        fillOpacity: 0.35, dashArray: '4 3',
+      return () => ({
+        color: '#e6bb00', weight: 1.6, fillColor: '#e6bb00',
+        fillOpacity: 0.06, dashArray: '4 3',
       });
     case 'quadras':
       return () => ({ color: '#5b7290', weight: 1, fillColor: '#5b7290', fillOpacity: 0.05 });
@@ -161,10 +152,6 @@ export const gis = {
 
   setOverlayData(id, geojson) {
     if (overlays[id]) { map.removeLayer(overlays[id]); delete overlays[id]; }
-    if (id === 'bairros') {
-      const pops = (geojson.features || []).map((f) => f.properties?.populacao).filter((v) => v != null);
-      popRange = { min: Math.min(...pops, 0), max: Math.max(...pops, 1) };
-    }
     overlays[id] = L.geoJSON(geojson, {
       pane: id, renderer: renderers[id], style: styleFor(id), onEachFeature: onEachFeature(id),
     });
@@ -187,13 +174,17 @@ export const gis = {
   setHeat(points, metric) {
     if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
     if (!points || !points.length) { this.updateLegend(); return; }
-    const grad = metric === 'nao_pavimentadas'
-      ? { 0.2: '#1f2937', 0.5: '#fb923c', 0.8: '#ef4444', 1: '#fee2e2' }
-      : { 0.2: '#3a2e00', 0.5: '#b08a00', 0.8: '#f6c500', 1: '#fff3c4' };
-    const maxW = Math.max(1, ...points.map((p) => p[2]));
+    const isPav = metric === 'nao_pavimentadas';
+    const grad = isPav
+      ? { 0.3: '#1f2937', 0.55: '#fb923c', 0.8: '#ef4444', 1: '#fecaca' }
+      : { 0.3: '#3a2e00', 0.6: '#b08a00', 0.85: '#f6c500', 1: '#fff3c4' };
+    // Raio menor + normalizacao por densidade evitam o "borrao" que cobre o mapa:
+    // para feicoes de peso ~1 e preciso varios pontos sobrepostos para esquentar.
+    const max = isPav ? Math.max(1, ...points.map((p) => p[2])) : 8;
     heatLayer = L.heatLayer(points, {
-      radius: 28, blur: 22, max: maxW, maxZoom: 18, pane: 'heat',
-      gradient: grad,
+      radius: isPav ? 18 : 12,
+      blur: isPav ? 18 : 15,
+      max, minOpacity: 0.2, maxZoom: 17, pane: 'heat', gradient: grad,
     }).addTo(map);
     this.updateLegend();
   },
@@ -203,7 +194,7 @@ export const gis = {
 
   fit(extent) {
     if (extent && extent.length === 4) {
-      map.fitBounds([[extent[1], extent[0]], [extent[3], extent[2]]], { padding: [30, 30] });
+      map.fitBounds([[extent[1], extent[0]], [extent[3], extent[2]]], { padding: [50, 50], maxZoom: 15 });
     }
   },
 
@@ -219,11 +210,6 @@ export const gis = {
       const items = Object.entries(USO_COLORS)
         .map(([k, c]) => `<div class="row"><span class="swatch" style="background:${c}"></span>${k}</div>`).join('');
       groups.push(`<div class="group"><h4>Uso do solo</h4>${items}</div>`);
-    }
-    if (overlayState.bairros) {
-      groups.push(`<div class="group"><h4>População</h4>
-        <div class="row"><span class="swatch" style="background:${POP_RAMP[0]}"></span>menor</div>
-        <div class="row"><span class="swatch" style="background:${POP_RAMP[POP_RAMP.length - 1]}"></span>maior</div></div>`);
     }
     if (heatLayer) {
       groups.push(`<div class="group"><h4>Mapa de calor</h4>
