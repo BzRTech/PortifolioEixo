@@ -10,8 +10,15 @@ import { ensureSchema, LAYERS } from '../src/schema.js';
     process.exit(1);
   }
   await ensureSchema();
-  await query(`TRUNCATE ${LAYERS.join(', ')} RESTART IDENTITY`);
-  console.log('Tabelas limpas:', LAYERS.join(', '));
+  const i = process.argv.indexOf('--municipio');
+  const municipio = i >= 0 ? process.argv[i + 1] : null;
+  if (municipio) {
+    for (const t of LAYERS) await query(`DELETE FROM ${t} WHERE municipio = $1`, [municipio]);
+    console.log(`Dados do municipio "${municipio}" removidos.`);
+  } else {
+    await query(`TRUNCATE ${LAYERS.join(', ')} RESTART IDENTITY`);
+    console.log('Tabelas limpas:', LAYERS.join(', '));
+  }
   await closePool();
 })().catch((e) => {
   console.error('Erro:', e.message);

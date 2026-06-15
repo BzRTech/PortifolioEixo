@@ -69,10 +69,17 @@ npm start                   # http://localhost:3000
 Copie os arquivos para `data/` e rode:
 
 ```bash
-npm run reset-db                          # (opcional) limpa o demo antes
-npm run import -- --dir data/ --truncate  # importa lotes/quadras/ruas/edificacoes/bairros
-npm run derive-bairros                    # (opcional) cria bairros dissolvendo quadras/lotes
+# 1a cidade (o --municipio marca os dados e habilita o seletor de cidade):
+npm run import -- --dir data/ --municipio "Tabira" --truncate
+
+# outra cidade depois (coloque os GeoJSON dela em data/ ou numa subpasta):
+npm run import -- --dir data/outra-cidade/ --municipio "Outra Cidade" --truncate
 ```
+
+Com `--municipio`, o `--truncate` substitui **apenas aquela cidade** (preserva as
+demais). Sem `--municipio`, `--truncate` limpa a tabela inteira. Para um GeoJSON
+de bairros derivado (quando o município não fornece), use `npm run derive-bairros`.
+Para limpar tudo (`npm run reset-db`) ou só uma cidade (`npm run reset-db -- --municipio "Nome"`).
 
 A camada é detectada pelo nome do arquivo (ou use `--layer`). O importador
 mapeia as propriedades mais comuns (PT-BR/EN), **descarta campos pessoais
