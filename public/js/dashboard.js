@@ -7,6 +7,18 @@ const USO_COLORS = {
   residencial: '#38bdf8', comercial: '#f59e0b', industrial: '#a78bfa',
   misto: '#34d399', servicos: '#f472b6', vazio: '#64748b',
 };
+const TIPO_COLORS = {
+  'asfalto': '#475569', 'paralelepipedo': '#38bdf8', 'paralelepípedo': '#38bdf8',
+  'bloquete': '#a78bfa', 'concreto': '#cbd5e1', 'intertravado': '#34d399',
+  'revestimento asfaltico': '#475569', 'leito natural': '#b45309', 'terra': '#b45309',
+  'viela': '#f59e0b',
+};
+const titleCase = (s) => String(s).toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+function tipoColor(t) {
+  const c = TIPO_COLORS[String(t.tipo).toLowerCase()];
+  if (c) return c;
+  return t.pavimentada ? '#475569' : '#b45309'; // fallback pela situacao
+}
 
 if (window.Chart) {
   Chart.defaults.color = '#9fb0c6';
@@ -51,18 +63,59 @@ export function renderDashboard(d) {
     pavBar.innerHTML = '';
   }
 
-  // ---- Doughnut: status das vias (contagem) ----
+  // ---- Resumo km + % por situacao ----
+  const pctPavV = extTotal > 0 ? (extPav / extTotal) * 100 : null;
+  const pctNaoV = extTotal > 0 ? (extNaoPav / extTotal) * 100 : null;
+  document.getElementById('pav-stats').innerHTML = `
+    <div class="ps">
+      <div class="k">${fmtLen(extPav)} <small>${fmtPct(pctPavV)}</small></div>
+      <div class="l"><span class="dot" style="background:${COL.accent}"></span>Pavimentadas</div>
+    </div>
+    <div class="ps">
+      <div class="k">${fmtLen(extNaoPav)} <small>${fmtPct(pctNaoV)}</small></div>
+      <div class="l"><span class="dot" style="background:${COL.danger}"></span>Não pavimentadas</div>
+    </div>`;
+
+  // ---- Doughnut: status das vias (por extensao) ----
+  const extInfo = Math.max(0, extTotal - extPav - extNaoPav);
   destroy('pavStatus');
   charts.pavStatus = new Chart(document.getElementById('chart-pav-status'), {
     type: 'doughnut',
     data: {
       labels: ['Pavimentadas', 'Não pavimentadas', 'Sem info'],
       datasets: [{
-        data: [r.pavimentadas || 0, r.nao_pavimentadas || 0, r.sem_info || 0],
+        data: [extPav, extNaoPav, extInfo],
         backgroundColor: [COL.accent, COL.danger, COL.gray], borderWidth: 0,
       }],
     },
-    options: { plugins: { legend: { position: 'bottom' } }, cutout: '62%' },
+    options: {
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${fmtLen(c.parsed)} (${fmtPct(extTotal > 0 ? c.parsed / extTotal * 100 : null)})` } },
+      },
+      cutout: '62%',
+    },
+  });
+
+  // ---- Doughnut: pavimentacao por tipo (por extensao) ----
+  const tipos = d.pavPorTipo || [];
+  destroy('pavTipo');
+  charts.pavTipo = new Chart(document.getElementById('chart-pav-tipo'), {
+    type: 'doughnut',
+    data: {
+      labels: tipos.map((t) => titleCase(t.tipo)),
+      datasets: [{
+        data: tipos.map((t) => Number(t.extensao_m) || 0),
+        backgroundColor: tipos.map((t) => tipoColor(t)), borderWidth: 0,
+      }],
+    },
+    options: {
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${fmtLen(c.parsed)}` } },
+      },
+      cutout: '58%',
+    },
   });
 
   // ---- Bairros sem pavimentacao ----
@@ -100,7 +153,13 @@ export function renderDashboard(d) {
     },
     options: {
       indexAxis: 'y',
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => fmtPct(c.parsed.x) } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => {
+          const b = pb[c.dataIndex] || {};
+          return `${fmtPct(c.parsed.x)} · ${fmtLen(b.extensao_pav_m)} de ${fmtLen(b.extensao_total_m)}`;
+        } } },
+      },
       scales: { x: { max: 100, grid: { color: gridColor } }, y: { grid: { display: false } } },
     },
   });

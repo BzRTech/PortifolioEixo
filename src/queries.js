@@ -139,7 +139,6 @@ export async function getExtent(municipio) {
 export async function getDashboard(municipio) {
   const p = muniParams(municipio);
   const w = muniWhere(municipio);
-  const a = muniAnd(municipio);
 
   const ruasResumo = (await query(`
     SELECT
@@ -156,22 +155,24 @@ export async function getDashboard(municipio) {
     SELECT
       COALESCE(NULLIF(bairro, ''), '(sem bairro)')                     AS bairro,
       COUNT(*)::int                                                    AS total_ruas,
-      COUNT(*) FILTER (WHERE pavimentada IS TRUE)::int                 AS pavimentadas,
-      COUNT(*) FILTER (WHERE pavimentada IS FALSE)::int                AS nao_pavimentadas,
-      COALESCE(SUM(extensao_m), 0)                                     AS extensao_m,
-      ROUND(100.0 * COUNT(*) FILTER (WHERE pavimentada IS TRUE)
-            / NULLIF(COUNT(*), 0), 1)::float                           AS pct_pavimentada
+      COALESCE(SUM(extensao_m), 0)                                     AS extensao_total_m,
+      COALESCE(SUM(extensao_m) FILTER (WHERE pavimentada IS TRUE), 0)  AS extensao_pav_m,
+      COALESCE(SUM(extensao_m) FILTER (WHERE pavimentada IS FALSE), 0) AS extensao_naopav_m,
+      ROUND((100.0 * COALESCE(SUM(extensao_m) FILTER (WHERE pavimentada IS TRUE), 0)
+            / NULLIF(SUM(extensao_m), 0))::numeric, 1)::float          AS pct_pavimentada
     FROM ruas ${w}
     GROUP BY 1
-    ORDER BY pct_pavimentada ASC NULLS FIRST, nao_pavimentadas DESC`, p)).rows;
+    ORDER BY pct_pavimentada ASC NULLS FIRST, extensao_naopav_m DESC`, p)).rows;
 
-  const bairrosPopulosos = (await query(`
-    SELECT nome, populacao, area_m2,
-      CASE WHEN area_m2 > 0 THEN ROUND(populacao / (area_m2 / 1e6))::int ELSE NULL END AS densidade_hab_km2
-    FROM bairros
-    WHERE populacao IS NOT NULL ${a}
-    ORDER BY populacao DESC NULLS LAST
-    LIMIT 15`, p)).rows;
+  // Pavimentacao por tipo de revestimento (por extensao).
+  const pavPorTipo = (await query(`
+    SELECT COALESCE(NULLIF(tipo_pavimento, ''), 'não informado') AS tipo,
+           COUNT(*)::int AS qtd,
+           COALESCE(SUM(extensao_m), 0) AS extensao_m,
+           BOOL_OR(pavimentada IS TRUE) AS pavimentada
+    FROM ruas ${w}
+    GROUP BY 1
+    ORDER BY extensao_m DESC`, p)).rows;
 
   const totais = (await query(`
     SELECT
@@ -191,7 +192,7 @@ export async function getDashboard(municipio) {
     .filter((b) => b.total_ruas > 0 && (b.pct_pavimentada === 0 || b.pct_pavimentada === null))
     .map((b) => b.bairro);
 
-  return { ruasResumo, pavPorBairro, bairrosPopulosos, totais, usoLotes, bairrosSemPavimentacao };
+  return { ruasResumo, pavPorBairro, pavPorTipo, totais, usoLotes, bairrosSemPavimentacao };
 }
 
 /** Pontos para o mapa de calor: [lat, lng, peso]. */

@@ -153,14 +153,9 @@ async function setupMunicipios() {
   try { municipios = await api.municipios(); } catch { /* sem municipios */ }
   if (municipios.length) {
     currentMunicipio = municipios[0];
-    // O seletor so aparece quando ha mais de uma cidade para escolher.
-    if (municipios.length > 1) {
-      els.filtroMunicipio.innerHTML = municipios.map((m) => `<option value="${m}">${m}</option>`).join('');
-      els.filtroMunicipio.value = currentMunicipio;
-      els.campoMunicipio.hidden = false;
-    } else {
-      els.campoMunicipio.hidden = true;
-    }
+    els.filtroMunicipio.innerHTML = municipios.map((m) => `<option value="${m}">${m}</option>`).join('');
+    els.filtroMunicipio.value = currentMunicipio;
+    els.campoMunicipio.hidden = false;
   } else {
     els.campoMunicipio.hidden = true;
     currentMunicipio = '';
