@@ -147,13 +147,16 @@ const MAPPERS = {
     },
   },
   ruas: {
-    columns: ['nome', 'bairro', 'pavimentada', 'tipo_pavimento', 'extensao_m'],
+    columns: ['codigo', 'nome', 'bairro', 'pavimentada', 'tipo_pavimento', 'extensao_m'],
     map: (p) => {
       const tipo = toStr(pick(p, ['tipo_pavimento', 'pavimento', 'tipo_pav', 'revestimento', 'surface', 'tipo']));
       // Le a situacao (pavimentada/nao) de varios campos; se ausente, infere do tipo.
       let pav = toBool(pick(p, ['pavimentada', 'pavimentado', 'paviment', 'pavimentacao', 'pavimentação', 'paved', 'situacao_pavimento', 'status', 'situacao']));
       if (pav === null && tipo) pav = toBool(tipo);
       return {
+        // Codigo UNITARIO da via (logradouro). As feicoes sao trechos; varios
+        // trechos compartilham o mesmo codigo. NAO usar id_trecho aqui.
+        codigo: toStr(pick(p, ['id_rua', 'cod_rua', 'codigo', 'cod_logradouro', 'cod_logr', 'cod_via', 'id_logradouro'])),
         nome: toStr(pick(p, ['nome', 'name', 'logradouro', 'rua', 'nm_rua', 'descricao', 'nm_logr'])),
         bairro: normBairro(pick(p, ['bairro', 'nm_bairro', 'no_bairro', 'neighborhood'])),
         pavimentada: pav,

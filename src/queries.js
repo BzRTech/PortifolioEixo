@@ -176,11 +176,13 @@ export async function getDashboard(municipio) {
 
   const totais = (await query(`
     SELECT
+      -- vias = logradouros distintos (por codigo); as feicoes sao trechos.
+      (SELECT COUNT(DISTINCT COALESCE(NULLIF(codigo, ''), nome, id::text)) FROM ruas ${w})::int AS total_vias,
+      (SELECT COUNT(*) FROM ruas ${w})::int                   AS total_trechos,
       (SELECT COUNT(*) FROM lotes ${w})::int                  AS total_lotes,
       (SELECT COUNT(*) FROM quadras ${w})::int                AS total_quadras,
       (SELECT COUNT(*) FROM edificacoes ${w})::int            AS total_edificacoes,
-      (SELECT COUNT(*) FROM bairros ${w})::int                AS total_bairros,
-      (SELECT COALESCE(SUM(populacao), 0) FROM bairros ${w})::int AS populacao_total`, p)).rows[0];
+      (SELECT COUNT(*) FROM bairros ${w})::int                AS total_bairros`, p)).rows[0];
 
   const usoLotes = (await query(`
     SELECT COALESCE(NULLIF(uso, ''), 'nao informado') AS uso,
