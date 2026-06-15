@@ -61,11 +61,22 @@ function cleanProps(props) {
   return out;
 }
 
-/** Normaliza nome de bairro: remove o prefixo redundante "BAIRRO ". */
+/**
+ * Normaliza nome de bairro para uniformizar variacoes da fonte:
+ * remove o prefixo "BAIRRO ", os acentos, deixa em maiusculas e descarta os
+ * conectores (DE/DA/DO/DOS/DAS). Ex.: "Distrito de Brejinho" e
+ * "Distrito Brejinho" viram "DISTRITO BREJINHO"; "Brayner Colaço" -> "BRAYNER COLACO".
+ */
 function normBairro(v) {
-  const s = toStr(v);
+  let s = toStr(v);
   if (!s) return null;
-  return s.replace(/^bairro\s+/i, '').trim() || null;
+  s = s.replace(/^bairro\s+/i, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .toUpperCase()
+    .replace(/\b(DE|DA|DO|DOS|DAS)\b/g, ' ')          // remove conectores
+    .replace(/\s+/g, ' ')
+    .trim();
+  return s || null;
 }
 
 const PAV_SIM = new Set([
@@ -97,7 +108,7 @@ const MAPPERS = {
   bairros: {
     columns: ['nome', 'populacao', 'area_m2'],
     map: (p) => ({
-      nome: toStr(pick(p, ['nome', 'name', 'bairro', 'nm_bairro', 'no_bairro', 'bairro_nome'])),
+      nome: normBairro(pick(p, ['nome', 'name', 'bairro', 'nm_bairro', 'no_bairro', 'bairro_nome'])),
       populacao: toInt(pick(p, ['populacao', 'população', 'pop', 'habitantes', 'qt_pop', 'populacao_estimada', 'population'])),
       area_m2: toNum(pick(p, ['area_m2', 'area', 'shape_area', 'st_area', 'area_total'])),
     }),
