@@ -95,6 +95,7 @@ async function applyMunicipio() {
   currentMunicipio = els.filtroMunicipio.value;
   currentBairro = '';
   els.filtro.value = '';
+  gis.setOrthoMunicipio(currentMunicipio);
   await loadBairrosList();
   await refitExtent();
   await reloadVisibleOverlays();
@@ -160,6 +161,7 @@ async function setupMunicipios() {
     els.campoMunicipio.hidden = true;
     currentMunicipio = '';
   }
+  gis.setOrthoMunicipio(currentMunicipio);
 }
 
 async function loadData() {
