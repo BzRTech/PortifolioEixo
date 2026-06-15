@@ -142,8 +142,10 @@ export const gis = {
       });
       baseLayers['Ortofoto'] = orthoLayer;
     }
-    dark.addTo(map);
-    this._defaultBase = 'Mapa escuro';
+    // Ortofoto como camada base padrao quando configurada; senao, mapa escuro.
+    const initialBase = orthoLayer ? 'Ortofoto' : 'Mapa escuro';
+    baseLayers[initialBase].addTo(map);
+    this._defaultBase = initialBase;
     return map;
   },
 
