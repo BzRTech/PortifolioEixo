@@ -42,14 +42,14 @@ export function renderDashboard(d) {
   const extPav = Number(r.extensao_pav_m) || 0;
   const pctPav = extTotal > 0 ? (extPav / extTotal) * 100 : null;
 
-  // ---- KPIs ----
+  // ---- KPIs: grandes numeros (quantidades) ----
   document.getElementById('kpis').innerHTML = [
-    kpi(fmtInt(t.total_bairros), 'Bairros', 'accent'),
-    kpi(fmtPct(pctPav), 'Vias pavimentadas (ext.)'),
-    kpi(fmtLen(extNaoPav), 'Não pavimentadas', 'danger'),
+    kpi(fmtInt(t.total_vias), 'Vias', 'accent'),
     kpi(fmtInt(t.total_lotes), 'Lotes'),
     kpi(fmtInt(t.total_edificacoes), 'Edificações'),
     kpi(fmtInt(t.total_quadras), 'Quadras'),
+    kpi(fmtInt(t.total_bairros), 'Bairros'),
+    kpi(fmtLen(extTotal), 'Extensão de vias'),
   ].join('');
 
   // ---- Barra de proporcao de pavimentacao (por extensao) ----

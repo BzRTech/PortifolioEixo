@@ -43,6 +43,7 @@ const STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS ruas (
      id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
      municipio       TEXT,
+     codigo          TEXT,
      nome            TEXT,
      bairro          TEXT,
      pavimentada     BOOLEAN,
@@ -70,6 +71,7 @@ const STATEMENTS = [
   `ALTER TABLE lotes       ADD COLUMN IF NOT EXISTS municipio TEXT`,
   `ALTER TABLE ruas        ADD COLUMN IF NOT EXISTS municipio TEXT`,
   `ALTER TABLE edificacoes ADD COLUMN IF NOT EXISTS municipio TEXT`,
+  `ALTER TABLE ruas        ADD COLUMN IF NOT EXISTS codigo TEXT`,
 
   `CREATE INDEX IF NOT EXISTS idx_bairros_geom      ON bairros      USING GIST (geom)`,
   `CREATE INDEX IF NOT EXISTS idx_quadras_geom      ON quadras      USING GIST (geom)`,
