@@ -11,18 +11,21 @@ async function getJSON(url) {
   return r.json();
 }
 
+function qs(params) {
+  const q = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)
+  ).toString();
+  return q ? '?' + q : '';
+}
+
 export const api = {
   config: () => getJSON('/api/config'),
   health: () => getJSON('/api/health'),
-  counts: () => getJSON('/api/counts'),
-  bairros: () => getJSON('/api/bairros'),
-  extent: () => getJSON('/api/extent'),
-  dashboard: () => getJSON('/api/dashboard'),
-  heatmap: (metric) => getJSON('/api/heatmap?metric=' + encodeURIComponent(metric)),
-  layer: (id, params = {}) => {
-    const q = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)
-    ).toString();
-    return getJSON(`/api/layers/${id}` + (q ? `?${q}` : ''));
-  },
+  municipios: () => getJSON('/api/municipios'),
+  counts: (municipio) => getJSON('/api/counts' + qs({ municipio })),
+  bairros: (municipio) => getJSON('/api/bairros' + qs({ municipio })),
+  extent: (municipio) => getJSON('/api/extent' + qs({ municipio })),
+  dashboard: (municipio) => getJSON('/api/dashboard' + qs({ municipio })),
+  heatmap: (metric, municipio) => getJSON('/api/heatmap' + qs({ metric, municipio })),
+  layer: (id, params = {}) => getJSON(`/api/layers/${id}` + qs(params)),
 };

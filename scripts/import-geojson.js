@@ -37,7 +37,7 @@ function loadFeatureCollection(filePath) {
   throw new Error('Arquivo nao parece ser um GeoJSON valido: ' + filePath);
 }
 
-async function importFile(filePath, layerArg, truncate) {
+async function importFile(filePath, layerArg, truncate, municipio) {
   const layer = layerArg && layerArg !== true ? layerArg : detectLayer(path.basename(filePath));
   if (!layer || !IMPORT_LAYERS.includes(layer)) {
     throw new Error(
@@ -48,7 +48,7 @@ async function importFile(filePath, layerArg, truncate) {
   const fc = loadFeatureCollection(filePath);
   const total = (fc.features || []).length;
   process.stdout.write(`  ${path.basename(filePath)} -> ${layer} (${total} feicoes) ... `);
-  const res = await importFeatureCollection(layer, fc, { truncate });
+  const res = await importFeatureCollection(layer, fc, { truncate, municipio });
   console.log(`OK: ${res.inserted} inseridas, ${res.skipped} ignoradas (sem geometria).`);
 }
 
@@ -73,18 +73,23 @@ async function importFile(filePath, layerArg, truncate) {
 
   if (!files.length) {
     console.log(`Uso:
-  npm run import -- --file data/ruas.geojson [--layer ruas] [--truncate]
-  npm run import -- --dir data/ [--truncate]
+  npm run import -- --file data/ruas.geojson [--layer ruas] [--municipio "Tabira"] [--truncate]
+  npm run import -- --dir data/ --municipio "Tabira" --truncate
 
 Camadas disponiveis: ${IMPORT_LAYERS.join(', ')}
-A camada e detectada pelo nome do arquivo se --layer nao for informado.`);
+A camada e detectada pelo nome do arquivo se --layer nao for informado.
+Com --municipio, os dados sao marcados com a cidade; --truncate substitui
+apenas aquela cidade (sem --municipio, --truncate limpa a tabela inteira).`);
     process.exit(0);
   }
 
+  const municipio = args.municipio && args.municipio !== true ? String(args.municipio) : null;
   await ensureSchema();
-  console.log(`Importando ${files.length} arquivo(s)${truncate ? ' (truncando tabelas)' : ''}:`);
+  console.log(`Importando ${files.length} arquivo(s)`
+    + `${municipio ? ` para o municipio "${municipio}"` : ''}`
+    + `${truncate ? (municipio ? ' (substituindo a cidade)' : ' (truncando tabelas)') : ''}:`);
   for (const f of files) {
-    await importFile(f, args.layer, truncate);
+    await importFile(f, args.layer, truncate, municipio);
   }
   console.log('Concluido.');
   await closePool();

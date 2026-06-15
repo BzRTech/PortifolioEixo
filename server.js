@@ -11,7 +11,7 @@ import { isConfigured, healthcheck } from './src/db.js';
 import { ensureSchema } from './src/schema.js';
 import {
   isValidLayer, getLayerGeoJSON, getDashboard, getHeatmap,
-  getExtent, getCounts, getBairros,
+  getExtent, getCounts, getBairros, getMunicipios,
 } from './src/queries.js';
 import { seedDemo } from './scripts/seed-demo.js';
 
@@ -84,6 +84,8 @@ function parseBbox(value) {
   return parts.length === 4 && parts.every(Number.isFinite) ? parts : undefined;
 }
 
+const muni = (req) => (req.query.municipio ? String(req.query.municipio) : undefined);
+
 // ---- Rotas da API ---------------------------------------------------------
 app.get('/api/health', asyncRoute(async (req, res) => {
   // Sempre 200 enquanto o processo HTTP estiver vivo (liveness probe).
@@ -95,30 +97,35 @@ app.get('/api/health', asyncRoute(async (req, res) => {
 
 app.get('/api/config', (req, res) => res.json(buildPublicConfig()));
 
+app.get('/api/municipios', asyncRoute(async (req, res) => {
+  if (!requireDb(res)) return;
+  res.json(await getMunicipios());
+}));
+
 app.get('/api/counts', asyncRoute(async (req, res) => {
   if (!requireDb(res)) return;
-  res.json(await getCounts());
+  res.json(await getCounts(muni(req)));
 }));
 
 app.get('/api/bairros', asyncRoute(async (req, res) => {
   if (!requireDb(res)) return;
-  res.json(await getBairros());
+  res.json(await getBairros(muni(req)));
 }));
 
 app.get('/api/extent', asyncRoute(async (req, res) => {
   if (!requireDb(res)) return;
-  res.json({ extent: await getExtent() });
+  res.json({ extent: await getExtent(muni(req)) });
 }));
 
 app.get('/api/dashboard', asyncRoute(async (req, res) => {
   if (!requireDb(res)) return;
-  res.json(await getDashboard());
+  res.json(await getDashboard(muni(req)));
 }));
 
 app.get('/api/heatmap', asyncRoute(async (req, res) => {
   if (!requireDb(res)) return;
   const metric = String(req.query.metric || 'populacao');
-  res.json({ metric, points: await getHeatmap(metric) });
+  res.json({ metric, points: await getHeatmap(metric, muni(req)) });
 }));
 
 app.get('/api/layers/:layer', asyncRoute(async (req, res) => {
@@ -128,6 +135,7 @@ app.get('/api/layers/:layer', asyncRoute(async (req, res) => {
     return res.status(404).json({ error: 'Camada invalida: ' + layer });
   }
   const fc = await getLayerGeoJSON(layer, {
+    municipio: muni(req),
     bbox: parseBbox(req.query.bbox),
     bairro: req.query.bairro ? String(req.query.bairro) : undefined,
     limit: req.query.limit ? Number(req.query.limit) : undefined,

@@ -186,7 +186,7 @@ export async function importFeatureCollection(layer, featureCollection, options 
   if (!mapper) throw new Error('Camada invalida: ' + layer);
 
   const features = (featureCollection && featureCollection.features) || [];
-  const { truncate = false, batchSize = 200, onProgress } = options;
+  const { truncate = false, municipio = null, batchSize = 200, onProgress } = options;
   const cols = mapper.columns;
   const multiType = GEOM_MULTI[layer];
 
@@ -195,7 +195,12 @@ export async function importFeatureCollection(layer, featureCollection, options 
 
   await withTransaction(async (client) => {
     if (truncate) {
-      await client.query(`TRUNCATE ${layer} RESTART IDENTITY`);
+      // Com municipio, substitui apenas os dados daquela cidade (preserva as outras).
+      if (municipio) {
+        await client.query(`DELETE FROM ${layer} WHERE municipio = $1`, [municipio]);
+      } else {
+        await client.query(`TRUNCATE ${layer} RESTART IDENTITY`);
+      }
     }
 
     const rows = [];
@@ -209,26 +214,28 @@ export async function importFeatureCollection(layer, featureCollection, options 
 
     for (let i = 0; i < rows.length; i += batchSize) {
       const chunk = rows.slice(i, i + batchSize);
-      await insertChunk(client, layer, cols, multiType, chunk);
+      await insertChunk(client, layer, cols, multiType, chunk, municipio);
       inserted += chunk.length;
       if (onProgress) onProgress(inserted, rows.length);
     }
   });
 
-  // Preenche area/extensao geografica (em metros) quando ausente.
+  // Preenche area/extensao geografica (em metros) quando ausente (escopo do municipio).
+  const scope = municipio ? 'municipio = $1' : 'TRUE';
+  const scopeParams = municipio ? [municipio] : [];
   if (layer === 'ruas') {
     await query(`UPDATE ruas SET extensao_m = ST_Length(geom::geography)
-                 WHERE extensao_m IS NULL AND geom IS NOT NULL`);
+                 WHERE extensao_m IS NULL AND geom IS NOT NULL AND ${scope}`, scopeParams);
   } else {
     await query(`UPDATE ${layer} SET area_m2 = ST_Area(geom::geography)
-                 WHERE area_m2 IS NULL AND geom IS NOT NULL`);
+                 WHERE area_m2 IS NULL AND geom IS NOT NULL AND ${scope}`, scopeParams);
   }
 
   return { inserted, skipped };
 }
 
-async function insertChunk(client, table, cols, multiType, chunk) {
-  const colList = [...cols, 'props', 'geom'].join(', ');
+async function insertChunk(client, table, cols, multiType, chunk, municipio) {
+  const colList = [...cols, 'municipio', 'props', 'geom'].join(', ');
   const valuesSql = [];
   const params = [];
   let n = 0;
@@ -239,6 +246,9 @@ async function insertChunk(client, table, cols, multiType, chunk) {
       params.push(v === undefined ? null : v);
       placeholders.push(`$${++n}`);
     }
+    // municipio
+    params.push(municipio || null);
+    placeholders.push(`$${++n}`);
     // props (jsonb)
     params.push(JSON.stringify(row.props || {}));
     placeholders.push(`$${++n}::jsonb`);
