@@ -133,7 +133,10 @@ export const gis = {
     if (config.ortho && config.ortho.url) {
       orthoLayer = L.tileLayer(config.ortho.url, {
         attribution: config.ortho.attribution || 'Ortofoto',
-        minZoom: config.ortho.minZoom, maxZoom: config.ortho.maxZoom, maxNativeZoom: config.ortho.maxZoom,
+        minZoom: 0,
+        maxZoom: config.map.maxZoom,
+        minNativeZoom: config.ortho.minZoom,   // abaixo: reduz o tile do zoom minimo
+        maxNativeZoom: config.ortho.maxZoom,   // acima: amplia o tile do zoom maximo (sem 404)
       });
       baseLayers['Ortofoto'] = orthoLayer;
     }
