@@ -127,6 +127,8 @@ function buildControls(config) {
 
   els.heatToggle.addEventListener('change', refreshHeat);
   els.heatMetric.addEventListener('change', () => { if (els.heatToggle.checked) refreshHeat(); });
+  const ruasModeSel = document.getElementById('ruas-mode');
+  ruasModeSel.addEventListener('change', () => gis.setRuasMode(ruasModeSel.value));
   els.filtro.addEventListener('change', applyBairro);
   els.filtroMunicipio.addEventListener('change', applyMunicipio);
 
