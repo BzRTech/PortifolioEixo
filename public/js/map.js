@@ -23,6 +23,11 @@ const TIPO_COLORS = {
 };
 const tipoColor = (t) => TIPO_COLORS[String(t || '').toLowerCase()] || '#9aa0a6';
 const titleCase = (s) => String(s).toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+// Slug URL-safe p/ casar com a pasta da ortofoto no S3 (sem acento/espaco/maiuscula).
+// Ex.: "Catolé do Rocha - PB" -> "catole-do-rocha-pb"; "Tabira" -> "tabira".
+const slugify = (s) => String(s || '')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 const PANES = ['bairros', 'quadras', 'lotes', 'edificacoes', 'heat', 'ruas'];
 
@@ -177,8 +182,7 @@ export const gis = {
   // Aponta a ortofoto para a pasta da cidade (placeholder {municipio} na URL).
   setOrthoMunicipio(m) {
     if (!orthoLayer || !this._orthoTemplate || !this._orthoTemplate.includes('{municipio}')) return;
-    const clean = String(m || '').replace(/\s+/g, ' ').trim(); // colapsa espacos duplicados
-    orthoLayer.setUrl(this._orthoTemplate.replace('{municipio}', encodeURIComponent(clean)), false);
+    orthoLayer.setUrl(this._orthoTemplate.replace('{municipio}', slugify(m)), false);
   },
 
   // Restringe a ortofoto a extensao da cidade (evita pedir tiles fora da cobertura).
@@ -224,16 +228,15 @@ export const gis = {
     if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
     if (!points || !points.length) { this.updateLegend(); return; }
     const isPav = metric === 'nao_pavimentadas';
-    const grad = isPav
-      ? { 0.3: '#1f2937', 0.55: '#fb923c', 0.8: '#ef4444', 1: '#fecaca' }
-      : { 0.3: '#3a2e00', 0.6: '#b08a00', 0.85: '#f6c500', 1: '#fff3c4' };
-    // Raio menor + normalizacao por densidade evitam o "borrao" que cobre o mapa:
-    // para feicoes de peso ~1 e preciso varios pontos sobrepostos para esquentar.
+    // Gradiente classico azul -> vermelho (bom contraste, inclusive sobre a ortofoto).
+    const grad = { 0.2: '#2b3bd6', 0.4: '#1fb6d6', 0.6: '#36d35a', 0.8: '#f5e02f', 1.0: '#e8341c' };
+    // Normalizacao por densidade evita o "borrao": peso ~1 precisa de varios
+    // pontos sobrepostos para esquentar.
     const max = isPav ? Math.max(1, ...points.map((p) => p[2])) : 8;
     heatLayer = L.heatLayer(points, {
-      radius: isPav ? 18 : 12,
-      blur: isPav ? 18 : 15,
-      max, minOpacity: 0.2, maxZoom: 17, pane: 'heat', gradient: grad,
+      radius: isPav ? 20 : 15,
+      blur: isPav ? 20 : 16,
+      max, minOpacity: 0.4, maxZoom: 17, pane: 'heat', gradient: grad,
     }).addTo(map);
     this.updateLegend();
   },
@@ -268,7 +271,7 @@ export const gis = {
     }
     if (heatLayer) {
       groups.push(`<div class="group"><h4>Mapa de calor</h4>
-        <div class="row"><span class="swatch" style="background:linear-gradient(90deg,#3a2e00,#b08a00,#f6c500)"></span>baixo → alto</div></div>`);
+        <div class="row"><span class="swatch" style="background:linear-gradient(90deg,#2b3bd6,#1fb6d6,#36d35a,#f5e02f,#e8341c)"></span>baixo → alto</div></div>`);
     }
     if (!groups.length) { legendEl.hidden = true; return; }
     legendEl.hidden = false;
