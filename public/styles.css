@@ -168,13 +168,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
 }
 .tag-list li.ok { background: rgba(34,197,94,.12); color: #bbf7d0; border-color: rgba(34,197,94,.3); }
 
-/* ---------- Legend ---------- */
+/* ---------- Legend (seção dentro do painel Camadas) ---------- */
 .legend {
-  position: absolute; left: 14px; bottom: 14px; z-index: 1000;
-  background: rgba(18, 28, 46, .92); backdrop-filter: blur(10px);
-  border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
-  padding: 11px 13px; font-size: 12px; max-width: 230px;
+  margin-top: 6px; padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
 }
+.legend[hidden] { display: none; }
 .legend h4 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-dim); }
 .legend .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
 .legend .group { margin-bottom: 10px; }
@@ -241,8 +241,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
     top: 60px; right: 8px; left: 8px; bottom: 8px; width: auto; max-width: none;
   }
   .dashboard.hidden { transform: translateY(115%); opacity: 1; }
-
-  .legend { display: none; }
 }
 
 @media (max-width: 540px) {
